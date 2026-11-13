@@ -74,20 +74,24 @@ def lambda_handler(event, context):
         else:
            already_persisted_words.append(word)
 
-    merriam_etymologies = batch_get_items('merriam-webster-etymologies', [{'word': word} for word in already_persisted_words])
 
-    print(f"Retrieved {len(merriam_etymologies)} etymologies from DynamoDB.")
-    print(f"Etymologies: {merriam_etymologies}")
+    # Only check the Merriam-Webster etymologies table if there are words that are already persisted
+    if len(already_persisted_words) > 0:
+       
+        merriam_etymologies = batch_get_items('merriam-webster-etymologies', [{'word': word} for word in already_persisted_words])
 
-    merriam_data_dict = {item['word']: {'fullText': item.get('fullText', ''), 'languageChain': item.get('languageChain', [])} for item in merriam_etymologies}
+        print(f"Retrieved {len(merriam_etymologies)} etymologies from DynamoDB.")
+        print(f"Etymologies: {merriam_etymologies}")
 
-    for word in already_persisted_words:
-        merriam_data = merriam_data_dict.get(word, {})
-        if merriam_data:
-           response_dict[word] = merriam_data
-        else:
-            print(f"No etymology data found for word: {word}, despite it being marked as already persisted.")
-            response_dict[word] = 'No etymology data found'
+        merriam_data_dict = {item['word']: {'fullText': item.get('fullText', ''), 'languageChain': item.get('languageChain', [])} for item in merriam_etymologies}
+
+        for word in already_persisted_words:
+            merriam_data = merriam_data_dict.get(word, {})
+            if merriam_data:
+                response_dict[word] = merriam_data
+            else:
+                print(f"No etymology data found for word: {word}, despite it being marked as already persisted.")
+                response_dict[word] = 'No etymology data found'
 
     return {
         'statusCode': 200,
