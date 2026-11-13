@@ -69,7 +69,7 @@ def lambda_handler(event, context):
             response_dict[word] = 'Retry Later'
             sqs.send_message(
                 QueueUrl='https://sqs.us-west-2.amazonaws.com/994969863268/FetchEtymologyQueue',
-                Message=word
+                MessageBody=word
             )
         else:
            already_persisted_words.append(word)
