@@ -52,7 +52,8 @@ def lambda_handler(event, context):
         }
 
     # Query all the words against the english_words DynamoDB table
-    english_words = batch_get_items('english-words', [{'word': word} for word in words])
+    # The database is all lower-case
+    english_words = batch_get_items('english-words', [{'word': word.lower()} for word in words])
 
     print(f"Retrieved {len(english_words)} words from DynamoDB.")
 
@@ -97,5 +98,5 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': response_dict
+        'body': json.dumps(response_dict)
     }
