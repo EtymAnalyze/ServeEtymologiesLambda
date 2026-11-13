@@ -1,0 +1,56 @@
+name: Deploy Python Lambda
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write   # Required for AWS OIDC authentication
+  contents: read    # Required to check out the repo
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out code from GitHub
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Set up the specific Python runtime version
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.15' # Change to match your Lambda runtime version
+
+      # 3. Install dependencies into a deployment package directory
+      - name: Install Dependencies
+        run: |
+          mkdir -p package
+          if [ -f requirements.txt ]; then
+            pip install --target ./package -r requirements.txt
+          fi
+          # Copy your source code into the package directory
+          cp -r src/* ./package/
+
+      # 4. Package everything into a zip artifact
+      - name: Zip Deployment Package
+        run: |
+          cd package
+          zip -r ../deployment_package.zip .
+          cd ..
+
+      # 5. Authenticate with AWS via OIDC
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::994969863268:role/Github-Deploy"
+          aws-region: "us-west-2"
+
+      # 6. Deploy the zip archive to AWS Lambda via AWS CLI
+      - name: Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ServeEtymologiesLambda \
+            --zip-file fileb://deployment_package.zip
