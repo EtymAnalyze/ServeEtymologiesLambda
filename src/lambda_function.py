@@ -33,10 +33,11 @@ def batch_get_items(table_name, keys):
 
 def lambda_handler(event, context):
     # Get words from the body of the API Gateway event
-    if event.body and isinstance(event.body, str):
+    body = event.get('body', {})
+    if body and isinstance(body, str):
         try:
             import json
-            event['body'] = json.loads(event.body)
+            event['body'] = json.loads(body)
         except json.JSONDecodeError:
             return {
                 'statusCode': 400,
