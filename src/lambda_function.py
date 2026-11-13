@@ -53,9 +53,43 @@ def lambda_handler(event, context):
     print(f"Retrieved {len(english_words)} words from DynamoDB.")
     print(f"Words: {english_words}")
 
+    merriam_status_dict = {item['word']: item.get('MerriamStatus', '') for item in english_words}
+
+    response_dict = {}
+
+    already_persisted_words = []
+
+    sqs = boto3.client("sqs", region_name="us-west-2")
+
+    for word in words:
+        merriam_status = merriam_status_dict.get(word, '')
+        if not merriam_status:
+           response_dict[word] = 'Not a Word'
+        elif merriam_status == 'NotFetched':
+            response_dict[word] = 'Retry Later'
+            sqs.send_message(
+                QueueUrl='https://sqs.us-west-2.amazonaws.com/994969863268/FetchEtymologyQueue',
+                Message=word
+            )
+        else:
+           already_persisted_words.append(word)
+
+    merriam_etymologies = batch_get_items('merriam-webster-etymologies', [{'word': word} for word in already_persisted_words])
+
+    print(f"Retrieved {len(merriam_etymologies)} etymologies from DynamoDB.")
+    print(f"Etymologies: {merriam_etymologies}")
+
+    merriam_data_dict = {item['word']: {'fullText': item.get('fullText', ''), 'languageChain': item.get('languageChain', [])} for item in merriam_etymologies}
+
+    for word in already_persisted_words:
+        merriam_data = merriam_data_dict.get(word, {})
+        if merriam_data:
+           response_dict[word] = merriam_data
+        else:
+            print(f"No etymology data found for word: {word}, despite it being marked as already persisted.")
+            response_dict[word] = 'No etymology data found'
+
     return {
         'statusCode': 200,
-        'body': {
-            'message': "chill it's a work in prog"
-        }
+        'body': response_dict
     }
