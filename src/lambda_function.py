@@ -48,7 +48,7 @@ def lambda_handler(event, context):
         }
 
     # Query all the words against the english_words DynamoDB table
-    english_words = batch_get_items('english_words', [{'word': word} for word in words])
+    english_words = batch_get_items('english-words', [{'word': word} for word in words])
 
     print(f"Retrieved {len(english_words)} words from DynamoDB.")
     print(f"Words: {english_words}")
