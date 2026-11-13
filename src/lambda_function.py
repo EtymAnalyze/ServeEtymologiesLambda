@@ -1,5 +1,6 @@
 import boto3
 import time
+import json
 
 dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
 
@@ -36,7 +37,6 @@ def lambda_handler(event, context):
     body = event.get('body', {})
     if body and isinstance(body, str):
         try:
-            import json
             event['body'] = json.loads(body)
         except json.JSONDecodeError:
             return {
