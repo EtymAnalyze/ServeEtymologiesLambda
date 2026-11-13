@@ -33,25 +33,27 @@ def batch_get_items(table_name, keys):
 
 def lambda_handler(event, context):
     # Get words from the body of the API Gateway event
-    body = event.get('body', '')
-    if not body or not body.get('words'):
+    if event.body and isinstance(event.body, str):
+        try:
+            import json
+            event['body'] = json.loads(event.body)
+        except json.JSONDecodeError:
+            return {
+                'statusCode': 400,
+                'body': 'Invalid JSON in request body.'
+            }
+
+    words = event['body'].get('words', [])
+    if len(words) == 0:
         return {
             'statusCode': 400,
             'body': 'No words provided in the request body.'
-        }
-    words = body['words']
-    # if words is not a list, return an error
-    if not isinstance(words, list):
-        return {
-            'statusCode': 400,
-            'body': 'Words must be provided as a list.'
         }
 
     # Query all the words against the english_words DynamoDB table
     english_words = batch_get_items('english-words', [{'word': word} for word in words])
 
     print(f"Retrieved {len(english_words)} words from DynamoDB.")
-    print(f"Words: {english_words}")
 
     merriam_status_dict = {item['word']: item.get('MerriamStatus', '') for item in english_words}
 
@@ -81,7 +83,6 @@ def lambda_handler(event, context):
         merriam_etymologies = batch_get_items('merriam-webster-etymologies', [{'word': word} for word in already_persisted_words])
 
         print(f"Retrieved {len(merriam_etymologies)} etymologies from DynamoDB.")
-        print(f"Etymologies: {merriam_etymologies}")
 
         merriam_data_dict = {item['word']: {'fullText': item.get('fullText', ''), 'languageChain': item.get('languageChain', [])} for item in merriam_etymologies}
 
