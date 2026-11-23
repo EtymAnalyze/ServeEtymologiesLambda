@@ -4,6 +4,9 @@ import json
 
 dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
 
+def dedupe_list(l):
+    return list(set(l))
+
 def batch_get_items(table_name, keys):
   """
     Retrieves multiple items and automatically retries UnprocessedKeys.
@@ -12,7 +15,7 @@ def batch_get_items(table_name, keys):
     """
   retrieved_items = []
   # Format the initial request
-  request_items = {table_name: {'Keys': keys}}
+  request_items = {table_name: {'Keys': dedupe_list(keys)}}
 
   retries = 0
   while request_items:
