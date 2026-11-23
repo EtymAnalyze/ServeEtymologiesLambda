@@ -33,6 +33,11 @@ def batch_get_items(table_name, keys):
   return retrieved_items
 
 def lambda_handler(event, context):
+    headers = {
+            "Access-Control-Allow-Origin": "*",  # Or your specific frontend URL
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+        }
     # Get words from the body of the API Gateway event
     body = event.get('body', {})
     if body and isinstance(body, str):
@@ -41,14 +46,16 @@ def lambda_handler(event, context):
         except json.JSONDecodeError:
             return {
                 'statusCode': 400,
-                'body': 'Invalid JSON in request body.'
+                'body': 'Invalid JSON in request body.',
+                'headers': headers
             }
 
     words = event['body'].get('words', [])
     if len(words) == 0:
         return {
             'statusCode': 400,
-            'body': 'No words provided in the request body.'
+            'body': 'No words provided in the request body.',
+            'headers': headers
         }
 
     # Query all the words against the english_words DynamoDB table
