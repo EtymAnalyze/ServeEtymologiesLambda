@@ -4,9 +4,6 @@ import json
 
 dynamodb = boto3.resource('dynamodb', region_name='us-west-2')
 
-def dedupe_list(l):
-    return list(set(l))
-
 def batch_get_items(table_name, keys):
   """
     Retrieves multiple items and automatically retries UnprocessedKeys.
@@ -34,6 +31,15 @@ def batch_get_items(table_name, keys):
       time.sleep(0.1 * (2**retries))
 
   return retrieved_items
+
+def dedupe_list(l):
+    return list(set(l))
+
+def batch_get_words(table_name, words):
+    # dedupe and lowercase the words
+    unique_words = dedupe_list([word.lower() for word in words])
+    keys = [{'word': word} for word in unique_words]
+    return batch_get_items(table_name, keys)
 
 def lambda_handler(event, context):
     headers = {
@@ -63,7 +69,7 @@ def lambda_handler(event, context):
 
     # Query all the words against the english_words DynamoDB table
     # The database is all lower-case
-    english_words = batch_get_items('english-words', [{'word': word.lower()} for word in words])
+    english_words = batch_get_words('english-words', words)
 
     print(f"Retrieved {len(english_words)} words from DynamoDB.")
 
@@ -92,7 +98,7 @@ def lambda_handler(event, context):
     # Only check the Merriam-Webster etymologies table if there are words that are already persisted
     if len(already_persisted_words) > 0:
        
-        merriam_etymologies = batch_get_items('merriam-webster-etymologies', [{'word': word} for word in already_persisted_words])
+        merriam_etymologies = batch_get_words('merriam-webster-etymologies', already_persisted_words)
 
         print(f"Retrieved {len(merriam_etymologies)} etymologies from DynamoDB.")
 
