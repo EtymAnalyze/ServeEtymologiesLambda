@@ -82,6 +82,7 @@ def lambda_handler(event, context):
     sqs = boto3.client("sqs", region_name="us-west-2")
 
     for word in words:
+        word = word.lower()
         merriam_status = merriam_status_dict.get(word, '')
         if not merriam_status:
            response_dict[word] = 'Not a Word'
