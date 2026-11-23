@@ -12,7 +12,7 @@ def batch_get_items(table_name, keys):
     """
   retrieved_items = []
   # Format the initial request
-  request_items = {table_name: {'Keys': dedupe_list(keys)}}
+  request_items = {table_name: {'Keys': keys}}
 
   retries = 0
   while request_items:
